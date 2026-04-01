@@ -14,23 +14,61 @@ function saveSession(data) {
   localStorage.setItem("user", JSON.stringify(data.user));
 }
 
+function getErrorMessage(error) {
+  const payload = error?.response?.data;
+  if (!payload) {
+    return "Authentication failed.";
+  }
+
+  if (typeof payload.detail === "string") {
+    return payload.detail;
+  }
+
+  const firstFieldError = Object.values(payload).find((value) => Array.isArray(value) && value.length);
+  if (firstFieldError) {
+    return firstFieldError[0];
+  }
+
+  return "Authentication failed.";
+}
+
+const LOGIN_DEFAULTS = {
+  name: "",
+  email: "patient@clinic.local",
+  phone: "9000000001",
+  password: "Patient@123",
+  role: "PATIENT",
+  otp: "",
+};
+
+const REGISTER_DEFAULTS = {
+  name: "",
+  email: "",
+  phone: "",
+  password: "",
+  role: "PATIENT",
+  otp: "",
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const [mode, setMode] = useState("login");
   const [authTab, setAuthTab] = useState("email");
-  const [form, setForm] = useState({
-    name: "",
-    email: "patient@clinic.local",
-    phone: "9000000001",
-    password: "Patient@123",
-    role: "PATIENT",
-    otp: "",
-  });
+  const [form, setForm] = useState(LOGIN_DEFAULTS);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
   const updateField = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const toggleMode = () => {
+    const nextMode = mode === "login" ? "register" : "login";
+    setMode(nextMode);
+    setError("");
+    setStatus("");
+    setAuthTab("email");
+    setForm(nextMode === "register" ? REGISTER_DEFAULTS : LOGIN_DEFAULTS);
   };
 
   const handleEmailAuth = async () => {
@@ -92,7 +130,7 @@ export default function Login() {
       }
       await verifyOtp();
     } catch (requestError) {
-      setError(requestError.response?.data?.detail || "Authentication failed.");
+      setError(getErrorMessage(requestError));
     }
   };
 
@@ -130,7 +168,7 @@ export default function Login() {
             <h2>{mode === "login" ? "Sign in to the clinic" : "Create an account"}</h2>
           </div>
 
-          <button className="ghost-button" onClick={() => setMode(mode === "login" ? "register" : "login")}>
+          <button className="ghost-button" onClick={toggleMode}>
             {mode === "login" ? "Need an account?" : "Already registered?"}
           </button>
         </div>

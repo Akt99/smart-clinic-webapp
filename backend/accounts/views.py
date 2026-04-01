@@ -30,6 +30,7 @@ def build_auth_payload(user):
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
@@ -39,6 +40,7 @@ class RegisterView(generics.CreateAPIView):
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = EmailLoginSerializer(data=request.data, context={"request": request})
@@ -48,6 +50,7 @@ class LoginView(APIView):
 
 class GoogleLoginView(APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = DemoGoogleLoginSerializer(data=request.data)
@@ -70,6 +73,7 @@ class GoogleLoginView(APIView):
 
 class PhoneOtpView(APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = PhoneOtpSerializer(data=request.data)
@@ -111,3 +115,4 @@ class ProfileView(APIView):
 
 class HealthcareTokenRefreshView(TokenRefreshView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
