@@ -1,7 +1,11 @@
 from rest_framework import generics, permissions
 
 from appointments.models import Appointment
-from appointments.serializers import AppointmentSerializer, BookAppointmentSerializer
+from appointments.serializers import (
+    AppointmentPaymentSerializer,
+    AppointmentSerializer,
+    BookAppointmentSerializer,
+)
 from common_permissions import IsDoctor, IsPatient
 
 
@@ -38,3 +42,13 @@ class AppointmentStatusUpdateView(generics.UpdateAPIView):
 
     def perform_update(self, serializer):
         serializer.save()
+
+
+class AppointmentPaymentUpdateView(generics.UpdateAPIView):
+    serializer_class = AppointmentPaymentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsPatient]
+    queryset = Appointment.objects.select_related("patient")
+    http_method_names = ["patch"]
+
+    def get_queryset(self):
+        return super().get_queryset().filter(patient=self.request.user)

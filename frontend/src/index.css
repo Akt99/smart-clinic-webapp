@@ -532,12 +532,26 @@ textarea {
   background: rgba(29, 120, 116, 0.14);
 }
 
+.payment-pill {
+  display: inline-flex;
+  margin-top: 10px;
+  margin-left: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: rgba(244, 162, 97, 0.18);
+}
+
 .status-pill.cancelled {
   background: rgba(184, 80, 66, 0.18);
 }
 
 .status-pill.completed {
   background: rgba(244, 162, 97, 0.22);
+}
+
+.payment-actions {
+  flex-wrap: wrap;
 }
 
 .directory-grid {

@@ -10,6 +10,17 @@ class Appointment(models.Model):
         CANCELLED = "CANCELLED", "Cancelled"
         COMPLETED = "COMPLETED", "Completed"
 
+    class PaymentMethod(models.TextChoices):
+        UNSELECTED = "UNSELECTED", "Unselected"
+        PAY_NOW = "PAY_NOW", "Pay Now"
+        PAY_AT_CLINIC = "PAY_AT_CLINIC", "Pay At Clinic"
+
+    class PaymentStatus(models.TextChoices):
+        UNPAID = "UNPAID", "Unpaid"
+        PENDING_ONLINE = "PENDING_ONLINE", "Pending Online Payment"
+        TO_BE_PAID_AT_CLINIC = "TO_BE_PAID_AT_CLINIC", "To Be Paid At Clinic"
+        PAID = "PAID", "Paid"
+
     patient = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -28,6 +39,16 @@ class Appointment(models.Model):
     date = models.DateField()
     time = models.TimeField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.BOOKED)
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.UNSELECTED,
+    )
+    payment_status = models.CharField(
+        max_length=24,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.UNPAID,
+    )
     reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

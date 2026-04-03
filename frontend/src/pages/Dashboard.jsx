@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [appointments, setAppointments] = useState([]);
   const [booking, setBooking] = useState(INITIAL_BOOKING);
   const [bookingMessage, setBookingMessage] = useState("");
+  const [appointmentMessage, setAppointmentMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -100,6 +101,23 @@ export default function Dashboard() {
     await API.patch(`appointments/${id}/status`, { status });
     const { data } = await API.get("appointments/");
     setAppointments(data);
+  };
+
+  const choosePaymentMethod = async (appointmentId, paymentMethod) => {
+    try {
+      await API.patch(`appointments/${appointmentId}/payment`, {
+        payment_method: paymentMethod,
+      });
+      const { data } = await API.get("appointments/");
+      setAppointments(data);
+      setAppointmentMessage(
+        paymentMethod === "PAY_AT_CLINIC"
+          ? "Appointment marked to be paid at the clinic."
+          : "Payment option saved. Connect your payment gateway here next.",
+      );
+    } catch (error) {
+      setAppointmentMessage("Unable to update payment option right now.");
+    }
   };
 
   if (loading || !profile) {
@@ -313,6 +331,7 @@ export default function Dashboard() {
             <h2>{isDoctor ? "Patient Schedule" : "My Appointments"}</h2>
             <p>{isDoctor ? "Manage live patient flow." : "Track your booked consultations."}</p>
           </div>
+          {!isDoctor && appointmentMessage ? <p className="status-text">{appointmentMessage}</p> : null}
 
           <div className="appointment-list">
             {appointments.length ? (
@@ -327,6 +346,15 @@ export default function Dashboard() {
                     <span className={`status-pill ${appointment.status.toLowerCase()}`}>
                       {appointment.status}
                     </span>
+                    {!isDoctor ? (
+                      <span className="payment-pill">
+                        {appointment.payment_method === "PAY_AT_CLINIC"
+                          ? "Payment: At Clinic"
+                          : appointment.payment_method === "PAY_NOW"
+                            ? "Payment: Pay Now Selected"
+                            : "Payment: Not selected"}
+                      </span>
+                    ) : null}
                   </div>
 
                   {isDoctor && appointment.status === "BOOKED" ? (
@@ -336,6 +364,22 @@ export default function Dashboard() {
                       </button>
                       <button className="ghost-button" onClick={() => markAppointment(appointment.id, "CANCELLED")}>
                         Cancel
+                      </button>
+                    </div>
+                  ) : null}
+                  {!isDoctor && appointment.status === "BOOKED" ? (
+                    <div className="inline-actions payment-actions">
+                      <button
+                        className="ghost-button"
+                        onClick={() => choosePaymentMethod(appointment.id, "PAY_NOW")}
+                      >
+                        Pay Now
+                      </button>
+                      <button
+                        className="ghost-button"
+                        onClick={() => choosePaymentMethod(appointment.id, "PAY_AT_CLINIC")}
+                      >
+                        Pay at Clinic
                       </button>
                     </div>
                   ) : null}

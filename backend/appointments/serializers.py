@@ -22,6 +22,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "date",
             "time",
             "status",
+            "payment_method",
+            "payment_status",
             "reason",
             "created_at",
         ]
@@ -62,3 +64,28 @@ class DoctorScheduleSerializer(serializers.ModelSerializer):
             {"date": appointment.date.isoformat(), "time": appointment.time.strftime("%H:%M")}
             for appointment in appointments
         ]
+
+
+class AppointmentPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appointment
+        fields = ["payment_method", "payment_status"]
+        read_only_fields = ["payment_status"]
+
+    def validate_payment_method(self, value):
+        if value not in {
+            Appointment.PaymentMethod.PAY_NOW,
+            Appointment.PaymentMethod.PAY_AT_CLINIC,
+        }:
+            raise serializers.ValidationError("Choose either pay now or pay at clinic.")
+        return value
+
+    def update(self, instance, validated_data):
+        payment_method = validated_data["payment_method"]
+        instance.payment_method = payment_method
+        if payment_method == Appointment.PaymentMethod.PAY_AT_CLINIC:
+            instance.payment_status = Appointment.PaymentStatus.TO_BE_PAID_AT_CLINIC
+        else:
+            instance.payment_status = Appointment.PaymentStatus.PENDING_ONLINE
+        instance.save(update_fields=["payment_method", "payment_status"])
+        return instance
