@@ -24,6 +24,9 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "status",
             "payment_method",
             "payment_status",
+            "amount_paise",
+            "razorpay_order_id",
+            "razorpay_payment_id",
             "reason",
             "created_at",
         ]
@@ -48,6 +51,7 @@ class BookAppointmentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context["request"]
+        validated_data["amount_paise"] = validated_data["doctor"].fee * 100
         return Appointment.objects.create(patient=request.user, **validated_data)
 
 
@@ -89,3 +93,14 @@ class AppointmentPaymentSerializer(serializers.ModelSerializer):
             instance.payment_status = Appointment.PaymentStatus.PENDING_ONLINE
         instance.save(update_fields=["payment_method", "payment_status"])
         return instance
+
+
+class RazorpayOrderSerializer(serializers.Serializer):
+    appointment_id = serializers.IntegerField()
+
+
+class RazorpayVerifySerializer(serializers.Serializer):
+    appointment_id = serializers.IntegerField()
+    razorpay_order_id = serializers.CharField()
+    razorpay_payment_id = serializers.CharField()
+    razorpay_signature = serializers.CharField()

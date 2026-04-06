@@ -16,6 +16,22 @@ function buildTimes() {
   return ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "16:00", "16:30", "17:00"];
 }
 
+function loadRazorpayScript() {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
@@ -105,18 +121,59 @@ export default function Dashboard() {
 
   const choosePaymentMethod = async (appointmentId, paymentMethod) => {
     try {
-      await API.patch(`appointments/${appointmentId}/payment`, {
-        payment_method: paymentMethod,
+      if (paymentMethod === "PAY_AT_CLINIC") {
+        await API.patch(`appointments/${appointmentId}/payment`, {
+          payment_method: paymentMethod,
+        });
+        const { data } = await API.get("appointments/");
+        setAppointments(data);
+        setAppointmentMessage("Appointment marked to be paid at the clinic.");
+        return;
+      }
+
+      const sdkLoaded = await loadRazorpayScript();
+      if (!sdkLoaded) {
+        setAppointmentMessage("Razorpay Checkout could not be loaded.");
+        return;
+      }
+
+      const { data: orderData } = await API.post("appointments/razorpay/order", {
+        appointment_id: appointmentId,
       });
-      const { data } = await API.get("appointments/");
-      setAppointments(data);
-      setAppointmentMessage(
-        paymentMethod === "PAY_AT_CLINIC"
-          ? "Appointment marked to be paid at the clinic."
-          : "Payment option saved. Connect your payment gateway here next.",
-      );
+
+      const razorpay = new window.Razorpay({
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: orderData.name,
+        description: orderData.description,
+        order_id: orderData.order_id,
+        prefill: orderData.prefill,
+        theme: {
+          color: "#1d7874",
+        },
+        handler: async (response) => {
+          await API.post("appointments/razorpay/verify", {
+            appointment_id: appointmentId,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+          const { data } = await API.get("appointments/");
+          setAppointments(data);
+          setAppointmentMessage("Payment completed successfully.");
+        },
+        modal: {
+          ondismiss: () => {
+            setAppointmentMessage("Payment window closed before completion.");
+          },
+        },
+      });
+      razorpay.open();
     } catch (error) {
-      setAppointmentMessage("Unable to update payment option right now.");
+      setAppointmentMessage(
+        error.response?.data?.detail || "Unable to update payment option right now.",
+      );
     }
   };
 
